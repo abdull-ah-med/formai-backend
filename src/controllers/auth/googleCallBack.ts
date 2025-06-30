@@ -1,7 +1,7 @@
 // src/controllers/auth/googleCallBack.ts
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import User from "../../models/user.model.ts";
+import User from "../../models/user.model";
 import { OAuth2Client } from "google-auth-library";
 
 const { JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FRONTEND_URL } =

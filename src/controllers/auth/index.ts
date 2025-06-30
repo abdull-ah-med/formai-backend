@@ -1,4 +1,4 @@
-export { loginUser } from "./signIn.ts";
-export { registerUser } from "./signUp.ts";
-export { googleCallback as handleGoogleCallback } from "./googleCallBack.ts";
-export { logoutUser } from "./signOut.ts";
+export { loginUser } from "./signIn";
+export { registerUser } from "./signUp";
+export { googleCallback as handleGoogleCallback } from "./googleCallBack";
+export { logoutUser } from "./signOut";

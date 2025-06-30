@@ -2,11 +2,11 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
-import authRoutes from "./routes/auth.routes.ts";
+import authRoutes from "./routes/auth.routes";
 import dotenv from "dotenv";
-import connectDB from "./config/db.ts";
-import protectedRoutes from "./routes/protected.routes.ts";
-import accountRoutes from "./routes/account.routes.ts";
+import connectDB from "./config/db";
+import protectedRoutes from "./routes/protected.routes";
+import accountRoutes from "./routes/account.routes";
 dotenv.config();
 
 const app = express();

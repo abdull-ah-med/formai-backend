@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import User from "../../models/user.model.ts";
+import User from "../../models/user.model";
 export const registerUser = async (req: Request, res: Response) => {
         const { fullName, email, password } = req.body;
         const SALT_ROUNDS = 10;

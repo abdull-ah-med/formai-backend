@@ -4,7 +4,7 @@ import {
         loginUser,
         logoutUser,
         handleGoogleCallback,
-} from "../controllers/auth/index.ts";
+} from "../controllers/auth/index";
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import verifyJWT, { AuthTokenPayload } from "../middleware/verifyJWT.ts";
-import User from "../models/user.model.ts";
+import verifyJWT, { AuthTokenPayload } from "../middleware/verifyJWT";
+import User from "../models/user.model";
 import bcrypt from "bcrypt";
 
 const router = Router();
