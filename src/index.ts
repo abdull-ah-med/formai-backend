@@ -17,7 +17,13 @@ app.disable("etag");
 // Set CORS options to allow the frontend URL
 app.use(
         cors({
-                origin: ["http://localhost:5173"],
+                origin: [
+                        "http://localhost:5173",
+                        process.env.FRONTEND_URL ||
+                                "https://your-app.vercel.app",
+                        /\.railway\.app$/,
+                        /\.vercel\.app$/,
+                ],
                 credentials: true,
         })
 );
