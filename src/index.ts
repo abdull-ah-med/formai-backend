@@ -14,10 +14,28 @@ const app = express();
 // Disable ETag headers to ensure fresh 200 responses (avoids 304 that break axios auth check)
 app.disable("etag");
 
-// Set CORS options to allow the frontend URL with proper credentials
+// ---------------------------------------------------------------------------
+// CORS CONFIGURATION
+// ---------------------------------------------------------------------------
+function normalizeOrigin(origin?: string) {
+        if (!origin) return undefined;
+        return origin.replace(/\/+$/g, ""); // strip trailing slashes
+}
+
+const FRONTEND_URL = normalizeOrigin(process.env.FRONTEND_URL);
+const allowedOrigins = new Set([FRONTEND_URL, "http://localhost:5173"]);
+
 app.use(
         cors({
-                origin: process.env.FRONTEND_URL || "http://localhost:5173",
+                origin: (origin, callback) => {
+                        if (!origin) return callback(null, true); // server-to-server or curl
+                        const clean = normalizeOrigin(origin);
+                        if (clean && allowedOrigins.has(clean)) {
+                                // reflect the exact Origin header back so credentials work
+                                return callback(null, origin);
+                        }
+                        return callback(new Error("Not allowed by CORS"));
+                },
                 credentials: true,
                 methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
                 allowedHeaders: [
