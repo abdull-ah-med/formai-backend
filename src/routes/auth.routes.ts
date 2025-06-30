@@ -5,11 +5,12 @@ import {
         logoutUser,
         handleGoogleCallback,
 } from "../controllers/auth/index";
+import { authLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
+router.post("/register", authLimiter, registerUser);
+router.post("/login", authLimiter, loginUser);
 router.get("/google/callback", handleGoogleCallback);
 router.post("/logout", logoutUser);
 

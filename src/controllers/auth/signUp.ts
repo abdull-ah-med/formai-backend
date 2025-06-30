@@ -1,9 +1,36 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import User from "../../models/user.model";
+import { verifyRecaptcha } from "../../utils/recaptcha";
+
 export const registerUser = async (req: Request, res: Response) => {
-        const { fullName, email, password } = req.body;
+        const {
+                fullName,
+                email,
+                password,
+                website: honeypot,
+                recaptchaToken,
+        } = req.body;
+
+        // ------------------------------------------------------------------
+        // Honeypot check
+        // ------------------------------------------------------------------
+        if (honeypot && honeypot !== "") {
+                return res
+                        .status(400)
+                        .json({ message: "Bot detected (honeypot triggered)" });
+        }
+
+        // ------------------------------------------------------------------
+        // CAPTCHA
+        // ------------------------------------------------------------------
+        const captchaValid = await verifyRecaptcha(recaptchaToken);
+        if (!captchaValid) {
+                return res
+                        .status(400)
+                        .json({ message: "Failed CAPTCHA validation" });
+        }
+
         const SALT_ROUNDS = 10;
         if (!fullName || !email || !password) {
                 return res

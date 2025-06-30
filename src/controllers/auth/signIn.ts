@@ -3,11 +3,37 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../../models/user.model";
 import dotenv from "dotenv";
+import { verifyRecaptcha } from "../../utils/recaptcha";
 
 dotenv.config(); // must come first
 
 export const loginUser = async (req: Request, res: Response) => {
-        const { email, password, rememberMe } = req.body;
+        const {
+                email,
+                password,
+                rememberMe,
+                website: honeypot,
+                recaptchaToken,
+        } = req.body;
+
+        // ------------------------------------------------------------------
+        // Honeypot check – bots usually fill hidden fields
+        // ------------------------------------------------------------------
+        if (honeypot && honeypot !== "") {
+                return res
+                        .status(400)
+                        .json({ message: "Bot detected (honeypot triggered)" });
+        }
+
+        // ------------------------------------------------------------------
+        // Verify Google reCAPTCHA token
+        // ------------------------------------------------------------------
+        const captchaValid = await verifyRecaptcha(recaptchaToken);
+        if (!captchaValid) {
+                return res
+                        .status(400)
+                        .json({ message: "Failed CAPTCHA validation" });
+        }
 
         const user = await User.findOne({ email });
         if (!user || !(await bcrypt.compare(password, user.password ?? ""))) {
