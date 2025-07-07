@@ -8,6 +8,23 @@ import {
         Model,
 } from "mongoose";
 
+// Form schema interfaces as per prompt
+interface Option {
+        id: string;
+        text: string;
+}
+interface Question {
+        id: string;
+        type: "short_answer" | "dropdown";
+        label: string;
+        options?: Option[];
+}
+interface FormSchema {
+        title: string;
+        description: string;
+        questions: Question[];
+}
+
 // 1) User Interface
 export interface IUser extends Document {
         fullName: string;
@@ -41,7 +58,49 @@ export interface IUser extends Document {
         createdAt: Date;
         updatedAt: Date;
         googleId?: string;
+        googleTokens?: {
+                accessToken: string;
+                refreshToken?: string;
+                expiryDate: number;
+        };
+        formsHistory: {
+                schema: FormSchema;
+                formId: string;
+                responderUri: string;
+                finalizedAt: Date;
+        }[];
 }
+
+const formQuestionOptionSchema = new Schema<Option>(
+        {
+                id: { type: String, required: true },
+                text: { type: String, required: true },
+        },
+        { _id: false }
+);
+
+const formQuestionSchema = new Schema<Question>(
+        {
+                id: { type: String, required: true },
+                type: {
+                        type: String,
+                        enum: ["short_answer", "dropdown"],
+                        required: true,
+                },
+                label: { type: String, required: true },
+                options: [formQuestionOptionSchema],
+        },
+        { _id: false }
+);
+
+const formSchema = new Schema<FormSchema>(
+        {
+                title: { type: String, required: true },
+                description: { type: String, required: true },
+                questions: [formQuestionSchema],
+        },
+        { _id: false }
+);
 
 // 2) Schema
 const userSchema = new Schema<IUser>(
@@ -104,6 +163,19 @@ const userSchema = new Schema<IUser>(
                         },
                 },
                 googleId: { type: String, unique: true, sparse: true },
+                googleTokens: {
+                        accessToken: { type: String },
+                        refreshToken: { type: String },
+                        expiryDate: { type: Number },
+                },
+                formsHistory: [
+                        {
+                                schema: formSchema,
+                                formId: { type: String, required: true },
+                                responderUri: { type: String, required: true },
+                                finalizedAt: { type: Date, default: Date.now },
+                        },
+                ],
         },
         { timestamps: true }
 );

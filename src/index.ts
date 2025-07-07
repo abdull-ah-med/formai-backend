@@ -7,9 +7,11 @@ import dotenv from "dotenv";
 import connectDB from "./config/db";
 import protectedRoutes from "./routes/protected.routes";
 import accountRoutes from "./routes/account.routes";
+import formRoutes from "./routes/form.routes";
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1); // Trust first proxy (needed for correct client IP handling behind proxies)
 
 // Disable ETag headers to ensure fresh 200 responses (avoids 304 that break axios auth check)
 app.disable("etag");
@@ -68,6 +70,7 @@ const startServer = async () => {
 app.use("/api", protectedRoutes);
 app.use("/api", accountRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/form", formRoutes);
 app.get("/", (_, res) => res.send("API running"));
 
 startServer();
