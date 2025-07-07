@@ -55,7 +55,7 @@ export async function generateSchemaFromPrompt(
                 const response = await axios.post(
                         CLAUDE_API_URL,
                         {
-                                model: "claude-3-5-sonnet-20240620",
+                                model: "claude-3-5-sonnet-20241022",
                                 max_tokens: 4096,
                                 system: FORMAI_CLAUDE_SYSTEM_PROMPT,
                                 messages: [{ role: "user", content: prompt }],
@@ -107,7 +107,7 @@ Please apply this change and return the new, complete JSON schema. Do not output
                 const response = await axios.post(
                         CLAUDE_API_URL,
                         {
-                                model: "claude-3-5-sonnet-20240620",
+                                model: "claude-3-5-sonnet-20241022",
                                 max_tokens: 4096,
                                 system: FORMAI_CLAUDE_SYSTEM_PROMPT,
                                 messages: [{ role: "user", content: prompt }],
