@@ -11,6 +11,8 @@ if (!JWT_SECRET || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
         throw new Error("Missing required OAuth environment variables");
 }
 
+
+
 export const googleCallback = async (req: Request, res: Response) => {
         try {
                 const { code, state } = req.query as {

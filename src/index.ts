@@ -26,55 +26,7 @@ const allowedOrigins = [
 
 app.use(
         cors({
-                origin: (origin, callback) => {
-                        // Allow requests with no origin (like mobile apps or curl requests)
-                        if (!origin) return callback(null, true);
-
-                        const normalizedOrigin = origin.replace(/\/+$/, "");
-
-                        for (const allowedOrigin of allowedOrigins) {
-                                const normalizedAllowedOrigin =
-                                        allowedOrigin.replace(/\/+$/, "");
-
-                                // Exact match
-                                if (
-                                        normalizedOrigin ===
-                                        normalizedAllowedOrigin
-                                ) {
-                                        return callback(null, origin); // Reflect origin
-                                }
-
-                                // Handle www subdomain variants for https urls
-                                if (
-                                        normalizedAllowedOrigin.startsWith(
-                                                "https://"
-                                        )
-                                ) {
-                                        const nonWww =
-                                                normalizedAllowedOrigin.replace(
-                                                        "https://www.",
-                                                        "https://"
-                                                );
-                                        const withWww = nonWww.replace(
-                                                "https://",
-                                                "https://www."
-                                        );
-
-                                        if (
-                                                normalizedOrigin === withWww ||
-                                                normalizedOrigin === nonWww
-                                        ) {
-                                                return callback(null, origin); // Reflect origin
-                                        }
-                                }
-                        }
-
-                        return callback(
-                                new Error(
-                                        `Not allowed by CORS. Origin: ${origin}`
-                                )
-                        );
-                },
+                origin: allowedOrigins,
                 credentials: true,
                 methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
                 allowedHeaders: [
