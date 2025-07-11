@@ -7,11 +7,14 @@ import { OAuth2Client } from "google-auth-library";
 const { JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FRONTEND_URL } =
         process.env;
 
-if (!JWT_SECRET || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+if (
+        !JWT_SECRET ||
+        !GOOGLE_CLIENT_ID ||
+        !GOOGLE_CLIENT_SECRET ||
+        !FRONTEND_URL
+) {
         throw new Error("Missing required OAuth environment variables");
 }
-
-
 
 export const googleCallback = async (req: Request, res: Response) => {
         try {
@@ -26,9 +29,7 @@ export const googleCallback = async (req: Request, res: Response) => {
                 }
 
                 // Use environment variable for redirect URI
-                const redirectUri =
-                        process.env.GOOGLE_REDIRECT_URI ||
-                        "http://localhost:4000/api/auth/google/callback";
+                const redirectUri = `${FRONTEND_URL}/auth/google/callback`;
 
                 // Include clientSecret in production for secure exchanges
                 const client = new OAuth2Client({
@@ -104,7 +105,11 @@ export const googleCallback = async (req: Request, res: Response) => {
                 });
 
                 // Finally redirect back to your frontend app
-                return res.status(200).json({ success: true, message: "Login successful", token });
+                return res.status(200).json({
+                        success: true,
+                        message: "Login successful",
+                        token,
+                });
         } catch (err) {
                 console.error("Google OAuth callback error:", err);
                 return res.status(500).send("OAuth callback failed");
