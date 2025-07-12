@@ -13,18 +13,18 @@ router.use(verifyJWT);
  * @desc Generate a form schema from a text prompt.
  * @access Private
  */
-router.post("/generate-form", formGenerationLimiter, generateForm);
+router.post("/generate-form", generateForm); // Removed formGenerationLimiter
 
 /**
  * @route POST /api/form/revise-form/:formId
- * @desc Revise an existing form schema based on a new prompt.
+ * @desc Revise a form schema based on feedback.
  * @access Private
  */
-router.post("/revise-form/:formId", formRevisionLimiter, reviseForm);
+router.post("/revise-form/:formId", reviseForm); // Removed formRevisionLimiter
 
 /**
  * @route POST /api/form/finalize-form/:formId
- * @desc Finalize a form, create it on Google Forms, and save to user history.
+ * @desc Finalize a form by creating it in Google Forms.
  * @access Private
  */
 router.post("/finalize-form/:formId", finalizeForm);

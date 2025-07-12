@@ -74,14 +74,6 @@ export const reviseForm = async (req: Request, res: Response) => {
                         });
                 }
 
-                // Ensure we haven't hit revision limit
-                if (form.revisionCount >= 3) {
-                        return res.status(429).json({
-                                success: false,
-                                error: "You've reached the maximum number of revisions (3) for this form.",
-                        });
-                }
-
                 // Get the latest schema (either the original or the last revision)
                 const latestSchema =
                         form.revisions.length > 0
@@ -106,7 +98,7 @@ export const reviseForm = async (req: Request, res: Response) => {
                         data: {
                                 formId: form._id,
                                 schema: revisedSchema,
-                                revisionsRemaining: 3 - form.revisionCount,
+                                revisionsRemaining: null, // Set to null since there's no limit
                         },
                 });
         } catch (error) {
