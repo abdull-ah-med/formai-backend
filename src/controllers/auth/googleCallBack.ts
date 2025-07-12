@@ -4,15 +4,9 @@ import jwt from "jsonwebtoken";
 import User from "../../models/user.model";
 import { OAuth2Client } from "google-auth-library";
 
-const { JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FRONTEND_URL } =
-        process.env;
+const { JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FRONTEND_URL } = process.env;
 
-if (
-        !JWT_SECRET ||
-        !GOOGLE_CLIENT_ID ||
-        !GOOGLE_CLIENT_SECRET ||
-        !FRONTEND_URL
-) {
+if (!JWT_SECRET || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !FRONTEND_URL) {
         throw new Error("Missing required OAuth environment variables");
 }
 
@@ -23,16 +17,11 @@ export const googleCallback = async (req: Request, res: Response) => {
                         state?: string;
                 };
                 if (!code) {
-                        return res
-                                .status(400)
-                                .json({ message: "Missing code" });
+                        return res.status(400).json({ message: "Missing code" });
                 }
 
                 // Use environment variable for redirect URI, ensuring no trailing slash
-                const redirectUri = `${(FRONTEND_URL || "").replace(
-                        /\/$/,
-                        ""
-                )}/auth/google/callback`;
+                const redirectUri = `${(FRONTEND_URL || "").replace(/\/$/, "")}/auth/google/callback`;
 
                 // Include clientSecret in production for secure exchanges
                 const client = new OAuth2Client({
@@ -55,9 +44,7 @@ export const googleCallback = async (req: Request, res: Response) => {
 
                 const payload = ticket.getPayload();
                 if (!payload?.email) {
-                        return res
-                                .status(400)
-                                .json({ message: "Invalid Google user" });
+                        return res.status(400).json({ message: "Invalid Google user" });
                 }
 
                 // Find or create user in your DB
@@ -67,42 +54,46 @@ export const googleCallback = async (req: Request, res: Response) => {
                                 fullName: payload.name || "Google User",
                                 email: payload.email,
                                 googleId: payload.sub,
+                                googleTokens: {
+                                        accessToken: tokens.access_token!,
+                                        refreshToken: tokens.refresh_token,
+                                        expiryDate: tokens.expiry_date || Date.now() + 3600 * 1000,
+                                },
                         });
                 } else {
                         // Check if user already has a different Google ID linked
                         if (user.googleId && user.googleId !== payload.sub) {
                                 return res
                                         .status(400)
-                                        .send(
-                                                "This account is already linked to a different Google account."
-                                        );
+                                        .send("This account is already linked to a different Google account.");
                         }
 
                         // If no Google ID yet, link it
                         if (!user.googleId) user.googleId = payload.sub;
+
+                        // Always update the Google tokens
+                        user.googleTokens = {
+                                accessToken: tokens.access_token!,
+                                refreshToken: tokens.refresh_token || user.googleTokens?.refreshToken,
+                                expiryDate: tokens.expiry_date || Date.now() + 3600 * 1000,
+                        };
+
                         user.lastLogin = new Date();
                         await user.save();
                 }
 
                 // Sign your JWT
-                const token = jwt.sign(
-                        { sub: user._id, email: user.email, role: user.role },
-                        JWT_SECRET,
-                        {
-                                expiresIn: "30d",
-                                audience: "api:auth",
-                                issuer: "auth-service",
-                        }
-                );
+                const token = jwt.sign({ sub: user._id, email: user.email, role: user.role }, JWT_SECRET, {
+                        expiresIn: "30d",
+                        audience: "api:auth",
+                        issuer: "auth-service",
+                });
 
                 // Set cookie with proper cross-domain settings for production
                 res.cookie("token", token, {
                         httpOnly: true,
                         secure: process.env.NODE_ENV === "production",
-                        sameSite:
-                                process.env.NODE_ENV === "production"
-                                        ? "none"
-                                        : "lax",
+                        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
                         path: "/",
                         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
                 });

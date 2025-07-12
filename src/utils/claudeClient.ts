@@ -1,55 +1,30 @@
 import axios from "axios";
 import dotenv from "dotenv";
+import { CLAUDE_SYSTEM_PROMPT } from "../config/systemPrompt";
 
 dotenv.config();
 
-const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
 
-// This would ideally be loaded from the file mentioned in the prompt.
-const FORMAI_CLAUDE_SYSTEM_PROMPT = `
-You are an expert in creating web forms. A user will provide a prompt, and you will generate a JSON schema representing a form.
-The JSON schema must follow this exact TypeScript interface:
-interface Option {
-  id: string; // Unique identifier for the option
-  text: string; // Display text for the option
+// This interface should match the type expected in the system prompt
+export interface FormField {
+        label: string;
+        type: string;
+        required?: boolean;
+        scale?: number;
+        options?: Array<string | { text?: string; label?: string }>;
 }
-interface Question {
-  id: string; // Unique identifier for the question
-  type: 'short_answer' | 'dropdown';
-  label: string; // The question text
-  options?: Option[]; // Only for 'dropdown' type
-}
-interface FormSchema {
-  title: string;
-  description: string;
-  questions: Question[];
-}
-When generating IDs, use short, unique, random strings.
-Do not output anything other than the single, valid JSON object.
-`;
 
-interface FormSchema {
+export interface FormSchema {
         title: string;
         description: string;
-        questions: {
-                id: string;
-                type: "short_answer" | "dropdown";
-                label: string;
-                options?: {
-                        id: string;
-                        text: string;
-                }[];
-        }[];
+        fields: FormField[];
 }
 
-export async function generateSchemaFromPrompt(
-        prompt: string
-): Promise<FormSchema> {
-        if (!CLAUDE_API_KEY) {
-                throw new Error(
-                        "CLAUDE_API_KEY is not set in environment variables."
-                );
+export async function generateSchemaFromPrompt(prompt: string): Promise<FormSchema> {
+        if (!ANTHROPIC_API_KEY) {
+                throw new Error("ANTHROPIC_API_KEY is not set in environment variables.");
         }
         try {
                 const response = await axios.post(
@@ -57,12 +32,12 @@ export async function generateSchemaFromPrompt(
                         {
                                 model: "claude-3-5-sonnet-20241022",
                                 max_tokens: 4096,
-                                system: FORMAI_CLAUDE_SYSTEM_PROMPT,
+                                system: CLAUDE_SYSTEM_PROMPT,
                                 messages: [{ role: "user", content: prompt }],
                         },
                         {
                                 headers: {
-                                        "x-api-key": CLAUDE_API_KEY,
+                                        "x-api-key": ANTHROPIC_API_KEY,
                                         "anthropic-version": "2023-06-01",
                                         "content-type": "application/json",
                                 },
@@ -77,30 +52,23 @@ export async function generateSchemaFromPrompt(
                 return JSON.parse(jsonString);
         } catch (error) {
                 console.error("Error calling Claude API:", error);
-                throw new Error(
-                        "Failed to generate form schema from Claude API."
-                );
+                throw new Error("Failed to generate form schema from Claude API.");
         }
 }
 
-export async function editSchemaWithInstruction(
-        schema: FormSchema,
-        instruction: string
-): Promise<FormSchema> {
-        if (!CLAUDE_API_KEY) {
-                throw new Error(
-                        "CLAUDE_API_KEY is not set in environment variables."
-                );
+export async function reviseSchemaWithPrompt(previousSchema: FormSchema, revisionPrompt: string): Promise<FormSchema> {
+        if (!ANTHROPIC_API_KEY) {
+                throw new Error("ANTHROPIC_API_KEY is not set in environment variables.");
         }
         const prompt = `
 Here is the current form schema:
 \`\`\`json
-${JSON.stringify(schema, null, 2)}
+${JSON.stringify(previousSchema, null, 2)}
 \`\`\`
 
-The user wants to make the following change: "${instruction}"
+The user wants to make the following changes to the form: "${revisionPrompt}"
 
-Please apply this change and return the new, complete JSON schema. Do not output any extra text, only the JSON object.
+Please apply these changes and return the new, complete JSON schema. Do not output any extra text, only the JSON object.
 `;
 
         try {
@@ -109,12 +77,12 @@ Please apply this change and return the new, complete JSON schema. Do not output
                         {
                                 model: "claude-3-5-sonnet-20241022",
                                 max_tokens: 4096,
-                                system: FORMAI_CLAUDE_SYSTEM_PROMPT,
+                                system: CLAUDE_SYSTEM_PROMPT,
                                 messages: [{ role: "user", content: prompt }],
                         },
                         {
                                 headers: {
-                                        "x-api-key": CLAUDE_API_KEY,
+                                        "x-api-key": ANTHROPIC_API_KEY,
                                         "anthropic-version": "2023-06-01",
                                         "content-type": "application/json",
                                 },
@@ -128,7 +96,7 @@ Please apply this change and return the new, complete JSON schema. Do not output
 
                 return JSON.parse(jsonString);
         } catch (error) {
-                console.error("Error calling Claude API during edit:", error);
-                throw new Error("Failed to edit form schema with Claude API.");
+                console.error("Error calling Claude API during revision:", error);
+                throw new Error("Failed to revise form schema with Claude API.");
         }
 }

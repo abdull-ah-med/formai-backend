@@ -1,29 +1,39 @@
 import { Request, Response } from "express";
-import {
-        generateSchemaFromPrompt,
-        editSchemaWithInstruction,
-} from "../utils/claudeClient";
+import { generateSchemaFromPrompt, reviseSchemaWithPrompt, FormSchema } from "../utils/claudeClient";
 import { createGoogleForm } from "../utils/googleFormService";
+import FormModel from "../models/form.model";
 import UserModel from "../models/user.model";
 import { OAuth2Client } from "google-auth-library";
 import { AuthTokenPayload } from "../middleware/verifyJWT";
 
-// A type guard for custom user property on Express Request - This is not needed if verifyJWT is used correctly.
-// interface RequestWithUser extends Request {
-//     user?: { id: string }; // Assuming verifyJWT adds this
-// }
-
 export const generateForm = async (req: Request, res: Response) => {
         const { prompt } = req.body;
+        const userId = (req.user as AuthTokenPayload)?.sub;
+
         if (!prompt) {
-                return res
-                        .status(400)
-                        .json({ success: false, error: "Prompt is required." });
+                return res.status(400).json({ success: false, error: "Prompt is required." });
         }
 
         try {
                 const schema = await generateSchemaFromPrompt(prompt);
-                res.json({ success: true, data: { schema } });
+
+                // Create a new form document
+                const newForm = new FormModel({
+                        userId,
+                        prompt,
+                        claudeResponse: schema,
+                        revisionCount: 0,
+                });
+
+                await newForm.save();
+
+                res.json({
+                        success: true,
+                        data: {
+                                formId: newForm._id,
+                                schema,
+                        },
+                });
         } catch (error) {
                 console.error(error);
                 res.status(500).json({
@@ -33,46 +43,110 @@ export const generateForm = async (req: Request, res: Response) => {
         }
 };
 
-export const editForm = async (req: Request, res: Response) => {
-        const { schema, instruction } = req.body;
-        if (!schema || !instruction) {
+export const reviseForm = async (req: Request, res: Response) => {
+        const { prompt } = req.body;
+        const { formId } = req.params;
+        const userId = (req.user as AuthTokenPayload)?.sub;
+
+        if (!prompt || !formId) {
                 return res.status(400).json({
                         success: false,
-                        error: "Schema and instruction are required.",
+                        error: "Prompt and form ID are required.",
                 });
         }
 
         try {
-                const updatedSchema = await editSchemaWithInstruction(
-                        schema,
-                        instruction
-                );
-                res.json({ success: true, data: { schema: updatedSchema } });
+                // Get the existing form
+                const form = await FormModel.findById(formId);
+
+                if (!form) {
+                        return res.status(404).json({
+                                success: false,
+                                error: "Form not found.",
+                        });
+                }
+
+                // Verify ownership
+                if (form.userId.toString() !== userId) {
+                        return res.status(403).json({
+                                success: false,
+                                error: "Not authorized to modify this form.",
+                        });
+                }
+
+                // Ensure we haven't hit revision limit
+                if (form.revisionCount >= 3) {
+                        return res.status(429).json({
+                                success: false,
+                                error: "You've reached the maximum number of revisions (3) for this form.",
+                        });
+                }
+
+                // Get the latest schema (either the original or the last revision)
+                const latestSchema =
+                        form.revisions.length > 0
+                                ? form.revisions[form.revisions.length - 1].claudeResponse
+                                : form.claudeResponse;
+
+                // Generate the revised schema
+                const revisedSchema = await reviseSchemaWithPrompt(latestSchema, prompt);
+
+                // Update the form with the new revision
+                form.revisions.push({
+                        prompt,
+                        claudeResponse: revisedSchema,
+                        timestamp: new Date(),
+                });
+
+                form.revisionCount += 1;
+                await form.save();
+
+                res.json({
+                        success: true,
+                        data: {
+                                formId: form._id,
+                                schema: revisedSchema,
+                                revisionsRemaining: 3 - form.revisionCount,
+                        },
+                });
         } catch (error) {
                 console.error(error);
                 res.status(500).json({
                         success: false,
-                        error: "Failed to edit form.",
+                        error: "Failed to revise form.",
                 });
         }
 };
 
 export const finalizeForm = async (req: Request, res: Response) => {
-        const { schema } = req.body;
+        const { formId } = req.params;
         const userId = (req.user as AuthTokenPayload)?.sub;
 
-        if (!schema) {
-                return res
-                        .status(400)
-                        .json({ success: false, error: "Schema is required." });
+        if (!formId) {
+                return res.status(400).json({ success: false, error: "Form ID is required." });
         }
         if (!userId) {
-                return res
-                        .status(401)
-                        .json({ success: false, error: "Unauthorized." });
+                return res.status(401).json({ success: false, error: "Unauthorized." });
         }
 
         try {
+                // Get the form
+                const form = await FormModel.findById(formId);
+                if (!form) {
+                        return res.status(404).json({
+                                success: false,
+                                error: "Form not found.",
+                        });
+                }
+
+                // Verify ownership
+                if (form.userId.toString() !== userId) {
+                        return res.status(403).json({
+                                success: false,
+                                error: "Not authorized to modify this form.",
+                        });
+                }
+
                 const user = await UserModel.findById(userId);
                 if (!user) {
                         return res.status(404).json({
@@ -88,50 +162,90 @@ export const finalizeForm = async (req: Request, res: Response) => {
                         });
                 }
 
-                const oauth2Client = new OAuth2Client();
+                // Get the final schema (either the original or the last revision)
+                const finalSchema =
+                        form.revisions.length > 0
+                                ? form.revisions[form.revisions.length - 1].claudeResponse
+                                : form.claudeResponse;
+
+                const oauth2Client = new OAuth2Client({
+                        clientId: process.env.GOOGLE_CLIENT_ID,
+                        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                });
+
                 oauth2Client.setCredentials({
                         access_token: user.googleTokens.accessToken,
                         refresh_token: user.googleTokens.refreshToken,
                         expiry_date: user.googleTokens.expiryDate,
                 });
 
-                const googleForm = await createGoogleForm(schema, oauth2Client);
+                // Check if token is expired and refresh if needed
+                if (
+                        user.googleTokens.expiryDate &&
+                        user.googleTokens.expiryDate <= Date.now() &&
+                        user.googleTokens.refreshToken
+                ) {
+                        try {
+                                const { credentials } = await oauth2Client.refreshAccessToken();
 
-                if (!googleForm.formId || !googleForm.responderUri) {
-                        throw new Error(
-                                "Form creation succeeded but response is missing ID or URI."
-                        );
+                                // Update user's tokens in the database
+                                user.googleTokens = {
+                                        accessToken: credentials.access_token!,
+                                        refreshToken: credentials.refresh_token || user.googleTokens.refreshToken,
+                                        expiryDate: credentials.expiry_date || Date.now() + 3600 * 1000,
+                                };
+
+                                await user.save();
+
+                                // Update the credentials in the oauth2Client
+                                oauth2Client.setCredentials({
+                                        access_token: credentials.access_token!,
+                                        refresh_token: credentials.refresh_token || user.googleTokens.refreshToken,
+                                        expiry_date: credentials.expiry_date,
+                                });
+                        } catch (refreshError) {
+                                console.error("Failed to refresh Google token:", refreshError);
+                                return res.status(403).json({
+                                        success: false,
+                                        error: "GOOGLE_TOKEN_EXPIRED",
+                                        message: "Your Google authorization has expired. Please reconnect your Google account.",
+                                });
+                        }
                 }
 
-                const newFormHistory = {
-                        schema,
+                const googleForm = await createGoogleForm(finalSchema, oauth2Client);
+
+                // Update the form with Google Form details
+                form.googleFormUrl = googleForm.responderUri;
+                await form.save();
+
+                // Add to user's form history
+                if (!user.formsHistory) user.formsHistory = [];
+                user.formsHistory.push({
+                        schema: finalSchema,
                         formId: googleForm.formId,
                         responderUri: googleForm.responderUri,
                         finalizedAt: new Date(),
-                };
-
-                user.formsHistory.push(newFormHistory);
+                });
                 await user.save();
 
                 res.json({
                         success: true,
                         data: {
-                                schema: schema,
-                                formId: googleForm.formId,
-                                responderUri: googleForm.responderUri,
+                                formId: form._id,
+                                googleFormUrl: googleForm.responderUri,
+                                schema: finalSchema,
                         },
                 });
         } catch (error) {
                 const e = error as any;
                 console.error(e);
                 // Check if token is expired - Google API returns errors in a specific format
-                if (
-                        e.response?.data?.error === "invalid_grant" ||
-                        e.message.includes("invalid_grant")
-                ) {
+                if (e.response?.data?.error === "invalid_grant" || e.message.includes("invalid_grant")) {
                         return res.status(403).json({
                                 success: false,
                                 error: "GOOGLE_TOKEN_EXPIRED",
+                                message: "Your Google authorization has expired. Please reconnect your Google account.",
                         });
                 }
                 res.status(500).json({

@@ -2,6 +2,7 @@ import { Router } from "express";
 import verifyJWT, { AuthTokenPayload } from "../middleware/verifyJWT";
 import User from "../models/user.model";
 import bcrypt from "bcrypt";
+import { checkGoogleFormsPermission } from "../controllers/accountController";
 
 const router = Router();
 
@@ -18,14 +19,10 @@ router.get("/account", verifyJWT, async (req, res) => {
                 }
 
                 // Pull fresh data from DB so revoked users can't still use an old token
-                const user = await User.findById(payload.sub).select(
-                        "_id email role fullName googleId"
-                );
+                const user = await User.findById(payload.sub).select("_id email role fullName googleId");
 
                 if (!user) {
-                        return res
-                                .status(404)
-                                .json({ error: "User not found" });
+                        return res.status(404).json({ error: "User not found" });
                 }
 
                 res.json({
@@ -42,6 +39,12 @@ router.get("/account", verifyJWT, async (req, res) => {
                 res.status(500).json({ error: "Internal server error" });
         }
 });
+
+/**
+ * GET /api/account/google-forms-permission
+ * Checks if the user has the necessary Google Forms permissions
+ */
+router.get("/account/google-forms-permission", verifyJWT, checkGoogleFormsPermission);
 
 /**
  * PUT /api/account-password
@@ -65,9 +68,7 @@ router.put("/account-password", verifyJWT, async (req, res) => {
                 // Find the user
                 const user = await User.findById(payload.sub);
                 if (!user) {
-                        return res
-                                .status(404)
-                                .json({ message: "User not found" });
+                        return res.status(404).json({ message: "User not found" });
                 }
 
                 // Reject password changes for Google-linked accounts
@@ -78,10 +79,7 @@ router.put("/account-password", verifyJWT, async (req, res) => {
                 }
 
                 // Verify current password
-                const isMatch = await bcrypt.compare(
-                        currentPassword,
-                        user.password || ""
-                );
+                const isMatch = await bcrypt.compare(currentPassword, user.password || "");
                 if (!isMatch) {
                         return res.status(400).json({
                                 message: "Current password is incorrect",

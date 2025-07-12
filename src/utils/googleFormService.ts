@@ -1,72 +1,132 @@
 import { google, forms_v1 } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
+import { FormSchema, FormField } from "./claudeClient";
 
-// Re-defining for clarity, though it could be imported from a types file
-interface FormSchema {
-        title: string;
-        description: string;
-        questions: {
-                id: string;
-                type: "short_answer" | "dropdown";
-                label: string;
-                options?: {
-                        id: string;
-                        text: string;
-                }[];
-        }[];
-}
-
-function mapSchemaToGoogleFormsRequest(
-        question: FormSchema["questions"][0],
-        index: number
-): forms_v1.Schema$Request {
-        if (question.type === "short_answer") {
-                return {
-                        createItem: {
-                                item: {
-                                        title: question.label,
-                                        questionItem: {
-                                                question: {
-                                                        textQuestion: {},
-                                                },
-                                        },
-                                },
-                                location: { index },
-                        },
-                };
-        } else if (question.type === "dropdown") {
-                return {
-                        createItem: {
-                                item: {
-                                        title: question.label,
-                                        questionItem: {
-                                                question: {
-                                                        choiceQuestion: {
-                                                                type: "RADIO", // 'RADIO' is used for dropdowns in the API
-                                                                options:
-                                                                        question.options?.map(
-                                                                                (
-                                                                                        opt
-                                                                                ) => ({
-                                                                                        value: opt.text,
-                                                                                })
-                                                                        ) || [],
+function mapFieldToGoogleFormsRequest(field: FormField, index: number): forms_v1.Schema$Request {
+        switch (field.type) {
+                case "text":
+                        return {
+                                createItem: {
+                                        item: {
+                                                title: field.label,
+                                                questionItem: {
+                                                        question: {
+                                                                textQuestion: {},
                                                         },
                                                 },
                                         },
+                                        location: { index },
                                 },
-                                location: { index },
-                        },
-                };
+                        };
+                case "textarea":
+                        return {
+                                createItem: {
+                                        item: {
+                                                title: field.label,
+                                                questionItem: {
+                                                        question: {
+                                                                textQuestion: {
+                                                                        paragraph: true,
+                                                                },
+                                                        },
+                                                },
+                                        },
+                                        location: { index },
+                                },
+                        };
+                case "rating":
+                        return {
+                                createItem: {
+                                        item: {
+                                                title: field.label,
+                                                questionItem: {
+                                                        question: {
+                                                                scaleQuestion: {
+                                                                        low: 1,
+                                                                        high: field.scale || 5,
+                                                                },
+                                                        },
+                                                },
+                                        },
+                                        location: { index },
+                                },
+                        };
+                case "dropdown":
+                case "radio":
+                        return {
+                                createItem: {
+                                        item: {
+                                                title: field.label,
+                                                questionItem: {
+                                                        question: {
+                                                                choiceQuestion: {
+                                                                        type:
+                                                                                field.type === "dropdown"
+                                                                                        ? "DROP_DOWN"
+                                                                                        : "RADIO",
+                                                                        options:
+                                                                                field.options?.map((opt) => ({
+                                                                                        value:
+                                                                                                typeof opt === "string"
+                                                                                                        ? opt
+                                                                                                        : opt.text ||
+                                                                                                          opt.label ||
+                                                                                                          "",
+                                                                                })) || [],
+                                                                },
+                                                        },
+                                                },
+                                        },
+                                        location: { index },
+                                },
+                        };
+                case "checkbox":
+                        return {
+                                createItem: {
+                                        item: {
+                                                title: field.label,
+                                                questionItem: {
+                                                        question: {
+                                                                choiceQuestion: {
+                                                                        type: "CHECKBOX",
+                                                                        options:
+                                                                                field.options?.map((opt) => ({
+                                                                                        value:
+                                                                                                typeof opt === "string"
+                                                                                                        ? opt
+                                                                                                        : opt.text ||
+                                                                                                          opt.label ||
+                                                                                                          "",
+                                                                                })) || [],
+                                                                },
+                                                        },
+                                                },
+                                        },
+                                        location: { index },
+                                },
+                        };
+                default:
+                        // Default to text input for unrecognized types
+                        return {
+                                createItem: {
+                                        item: {
+                                                title: field.label,
+                                                questionItem: {
+                                                        question: {
+                                                                textQuestion: {},
+                                                        },
+                                                },
+                                        },
+                                        location: { index },
+                                },
+                        };
         }
-        // This part should ideally not be reached if schema is validated
-        throw new Error(`Unknown question type: ${question.type}`);
 }
 
 export async function createGoogleForm(
         schema: FormSchema,
         oauth2Client: OAuth2Client
-): Promise<forms_v1.Schema$Form> {
+): Promise<{ formId: string; responderUri: string }> {
         const forms = google.forms({
                 version: "v1",
                 auth: oauth2Client,
@@ -85,9 +145,7 @@ export async function createGoogleForm(
 
                 const formId = createResponse.data.formId;
                 if (!formId) {
-                        throw new Error(
-                                "Failed to create form, no formId returned."
-                        );
+                        throw new Error("Failed to create form, no formId returned.");
                 }
 
                 // 2. Prepare batch update to add questions and description
@@ -101,8 +159,8 @@ export async function createGoogleForm(
                                         updateMask: "description",
                                 },
                         },
-                        // Add questions
-                        ...schema.questions.map(mapSchemaToGoogleFormsRequest),
+                        // Add fields
+                        ...schema.fields.map(mapFieldToGoogleFormsRequest),
                 ];
 
                 // 3. Apply the batch update
@@ -115,10 +173,10 @@ export async function createGoogleForm(
                         });
                 }
 
-                // The batchUpdate doesn't return the full form object with the updates.
-                // We can get it to confirm, but the createResponse data is usually sufficient.
-                // For this use case, we'll return the initial creation response data, which includes formId and responderUri
-                return createResponse.data;
+                return {
+                        formId: formId,
+                        responderUri: createResponse.data.responderUri || "",
+                };
         } catch (error) {
                 console.error("Error creating Google Form:", error);
                 throw new Error("Failed to create Google Form.");

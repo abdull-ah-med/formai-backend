@@ -1,10 +1,7 @@
 import { Router } from "express";
-import {
-        generateForm,
-        editForm,
-        finalizeForm,
-} from "../controllers/formController";
+import { generateForm, reviseForm, finalizeForm } from "../controllers/formController";
 import verifyJWT from "../middleware/verifyJWT";
+import { formGenerationLimiter, formRevisionLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
@@ -12,24 +9,24 @@ const router = Router();
 router.use(verifyJWT);
 
 /**
- * @route POST /api/form/generate
+ * @route POST /api/form/generate-form
  * @desc Generate a form schema from a text prompt.
  * @access Private
  */
-router.post("/generate", generateForm);
+router.post("/generate-form", formGenerationLimiter, generateForm);
 
 /**
- * @route POST /api/form/edit
- * @desc Edit an existing form schema based on an instruction.
+ * @route POST /api/form/revise-form/:formId
+ * @desc Revise an existing form schema based on a new prompt.
  * @access Private
  */
-router.post("/edit", editForm);
+router.post("/revise-form/:formId", formRevisionLimiter, reviseForm);
 
 /**
- * @route POST /api/form/finalize
+ * @route POST /api/form/finalize-form/:formId
  * @desc Finalize a form, create it on Google Forms, and save to user history.
  * @access Private
  */
-router.post("/finalize", finalizeForm);
+router.post("/finalize-form/:formId", finalizeForm);
 
 export default router;
