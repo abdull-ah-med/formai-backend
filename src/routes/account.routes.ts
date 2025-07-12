@@ -79,7 +79,7 @@ router.get("/account/debug-google-token", verifyJWT, async (req, res) => {
                                 expiryDate: user.googleTokens?.expiryDate
                                         ? new Date(user.googleTokens.expiryDate).toISOString()
                                         : null,
-                                scopes: user.googleTokens?.scope || "unknown",
+                                scopes: hasGoogleAccount ? "https://www.googleapis.com/auth/forms" : "none",
                         },
                 });
         } catch (error) {
