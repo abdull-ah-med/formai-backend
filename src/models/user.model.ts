@@ -88,7 +88,7 @@ export interface IUser extends Document {
         formsHistory: {
                 schema: FormSchema;
                 formId: string;
-                responderUri: string;
+                responderUri?: string;
                 finalizedAt: Date;
         }[];
 }
@@ -194,7 +194,7 @@ const userSchema = new Schema<IUser>(
                         {
                                 schema: formSchema,
                                 formId: { type: String, required: true },
-                                responderUri: { type: String, required: true },
+                                responderUri: { type: String },
                                 finalizedAt: { type: Date, default: Date.now },
                         },
                 ],
