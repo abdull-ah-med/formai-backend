@@ -57,6 +57,7 @@ export const googleCallback = async (req: Request, res: Response) => {
                                 success: false,
                                 error: "Token exchange failed",
                                 message: tokenError.message || "Failed to exchange authorization code for tokens",
+                                details: tokenError.response?.data,
                         });
                 }
 
