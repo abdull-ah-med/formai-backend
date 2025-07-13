@@ -29,6 +29,8 @@ export const getAccount = async (req: Request, res: Response) => {
                                 email: user.email,
                                 fullName: user.fullName,
                                 role: user.role,
+                                googleId: user.googleId,
+                                hasPassword: !!user.password,
                                 createdAt: user.createdAt,
                                 updatedAt: user.updatedAt,
                         },
