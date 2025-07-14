@@ -33,6 +33,7 @@ export const getAccount = async (req: Request, res: Response) => {
                                 hasPassword: !!user.password,
                                 createdAt: user.createdAt,
                                 updatedAt: user.updatedAt,
+				isGoogleLinked: !!user.googleId,
                         },
                 });
         } catch (error: any) {
