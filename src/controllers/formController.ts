@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { generateSchemaFromPrompt, reviseSchemaWithPrompt, FormSchema } from "../utils/claudeClient";
+import { generateSchemaFromPrompt, reviseSchemaWithPrompt } from "../utils/claudeClient";
 import { createGoogleForm } from "../utils/googleFormService";
 import FormModel from "../models/form.model";
 import UserModel from "../models/user.model";
