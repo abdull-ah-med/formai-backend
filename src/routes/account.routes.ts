@@ -1,5 +1,5 @@
 import express from "express";
-import { getAccount, delinkGoogleAccount } from "../controllers/account/";
+import { getAccount, delinkGoogleAccount, deleteAccount } from "../controllers/account/";
 import verifyJWT from "../middleware/verifyJWT";
 
 const router = express.Router();
@@ -8,5 +8,7 @@ const router = express.Router();
 router.get("/", verifyJWT, getAccount);
 
 router.delete("/google-link", verifyJWT, delinkGoogleAccount);
+
+router.delete("/", verifyJWT, deleteAccount);
 
 export default router;
