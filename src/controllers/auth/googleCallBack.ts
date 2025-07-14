@@ -125,7 +125,7 @@ export const googleCallback = async (req: Request, res: Response) => {
                                         googleId: payload.sub,
                                         googleTokens: {
                                                 accessToken: tokens.access_token!,
-                                                refreshToken: tokens.refresh_token,
+                                                refreshToken: tokens.refresh_token || undefined,
                                                 expiryDate: tokens.expiry_date || Date.now() + 3600 * 1000,
                                         },
                                 });
@@ -154,7 +154,9 @@ export const googleCallback = async (req: Request, res: Response) => {
                         // Always update the Google tokens
                         user.googleTokens = {
                                 accessToken: tokens.access_token!,
-                                refreshToken: tokens.refresh_token || user.googleTokens?.refreshToken,
+                                refreshToken:
+                                        tokens.refresh_token ||
+                                        (user.googleTokens ? user.googleTokens.refreshToken : undefined),
                                 expiryDate: tokens.expiry_date || Date.now() + 3600 * 1000,
                         };
 

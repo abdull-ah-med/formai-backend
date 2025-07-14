@@ -186,8 +186,16 @@ const userSchema = new Schema<IUser>(
                 },
                 googleId: { type: String, unique: true, sparse: true },
                 googleTokens: {
-                        accessToken: { type: String, set: encrypt, get: decrypt },
-                        refreshToken: { type: String, set: encrypt, get: decrypt },
+                        accessToken: {
+                                type: String,
+                                set: (val: string) => (val ? encrypt(val) : undefined),
+                                get: (val: string) => (val ? decrypt(val) : undefined),
+                        },
+                        refreshToken: {
+                                type: String,
+                                set: (val: string) => (val ? encrypt(val) : undefined),
+                                get: (val: string) => (val ? decrypt(val) : undefined),
+                        },
                         expiryDate: { type: Number },
                 },
                 formsHistory: [
