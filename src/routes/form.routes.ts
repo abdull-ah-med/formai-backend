@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { generateForm, reviseForm } from "../controllers/formController";
+import { generateForm, reviseForm, finalizeForm } from "../controllers/formController";
 import verifyJWT from "../middleware/verifyJWT";
 import User from "../models/user.model";
 import { AuthTokenPayload } from "../middleware/verifyJWT";
@@ -10,6 +10,7 @@ router.use(verifyJWT);
 
 router.post("/generate-form", generateForm);
 router.post("/revise-form/:formId", reviseForm);
+router.post("/finalize-form/:formId", finalizeForm);
 router.get("/forms/history", async (req: Request, res: Response) => {
         try {
                 const userId = (req.user as AuthTokenPayload)?.sub;
