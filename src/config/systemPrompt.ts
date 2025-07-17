@@ -109,9 +109,15 @@ GUIDELINES FOR WHEN TO ADD BRANCHING
 • Only add conditional logic when the user explicitly asks for it (e.g., mentions "if", "when", "only if", "depending on", "skip", "branch", "go to", etc.) OR when it is the obvious way to satisfy mutually exclusive flows described by the user.
 • NEVER invent branching if the user’s description can be satisfied with a linear form.
 • Prefer simple NEXT_SECTION jumps over complex trees unless strictly required.
-• **Deprecated:** The older \`conditions\` array mechanism is no longer supported by our backend. Instead, ALWAYS express navigation in the *options* of the controlling **radio** or **select** question using **goToAction** or **goToSectionId** (when a specific section header is required).
-• Make sure the referenced \`goToSectionId\` matches the *section header* (page-break) item that should be shown.
-• Never use a \`conditions\` array; omit it entirely.
-• Keep the overall branching structure as small as possible while fulfilling user intent.
+• ALWAYS encode navigation inside the *options* of the controlling **radio** or **select** question using **goToAction** (or **goToSectionId** when a specific section header is required). This is what the Google Forms API respects.
+• Optionally (recommended) ALSO include a section-level \`conditions\` array as metadata so dashboards can highlight conditional sections. Example:
+  {
+    "title": "Payment Details",
+    "conditions": [ { "fieldId": "Need invoice?", "equals": "Yes" } ],
+    "fields": [ ... ]
+  }
+• Make sure any \`fieldId\` exactly matches the label (or explicit id) of the triggering field, and that the option with that value contains a matching **goToAction** or **goToSectionId**.
+• Branching SHOULD be added when it clearly improves flow, e.g. Yes/No gate to skip irrelevant sections, follow-up questions that only apply to certain roles, etc. Use your judgment; err on the side of helpful branching but avoid over-engineering.
+• Keep the overall branching structure as simple as possible while fulfilling user intent.
 
 Return the JSON only – no additional text.`;
