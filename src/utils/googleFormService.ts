@@ -221,7 +221,7 @@ function validateBranchingNavigation(schema: FormSchema) {
 						(optObj as any).text ||
 						(optObj as any).value ||
 						"",
-					hasNav: Boolean((optObj as any).goToAction),
+					hasNav: Boolean((optObj as any).goToAction || (optObj as any).goToSectionId),
 				});
 			});
 		}
