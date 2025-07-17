@@ -284,6 +284,45 @@ function ensureNavigationForConditions(schema: FormSchema) {
 		}
 	}
 }
+
+// Normalise older option keys (goToAction / goToSectionId) and fill defaults so strict Zod schema passes.
+function normalizeLegacyOptions(schema: any) {
+	const patchField = (field: any) => {
+		if (!(field.type === "radio" || field.type === "select")) return;
+		if (!Array.isArray(field.options)) return;
+		let anyGo = false;
+		field.options = field.options.map((opt: any) => {
+			if (typeof opt === "string") return opt; // leave strings
+			if (opt.goTo) {
+				anyGo = true;
+				return opt;
+			}
+			if (opt.goToAction) {
+				anyGo = true;
+				return { ...opt, goTo: opt.goToAction };
+			}
+			if (opt.goToSectionId) {
+				anyGo = true;
+				return { ...opt, goTo: opt.goToSectionId };
+			}
+			return opt; // keep for now
+		});
+		// If some options had navigation ensure all have.
+		if (anyGo) {
+			field.options = field.options.map((opt: any) => {
+				if (typeof opt === "string") return opt;
+				if (!opt.goTo) {
+					return { ...opt, goTo: "NEXT_SECTION" };
+				}
+				return opt;
+			});
+		}
+	};
+	if (schema.sections) {
+		schema.sections.forEach((sec: any) => sec.fields.forEach(patchField));
+	}
+}
+
 async function applyConditionalNavigation(
 	formsClient: ReturnType<typeof google.forms>,
 	formId: string,
@@ -416,7 +455,8 @@ export async function createGoogleForm(
 		fields: schema.fields?.length,
 	});
 	console.debug("[createGoogleForm] raw schema", JSON.stringify(schema, null, 2));
-	// Auto-add navigation based on conditions to avoid validator false negatives
+	// Legacy normalisation & auto-injection before strict validation
+	normalizeLegacyOptions(schema);
 	ensureNavigationForConditions(schema);
 	// Validate the schema first
 	const validation = validateFormSchema(schema);
