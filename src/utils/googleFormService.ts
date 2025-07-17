@@ -339,8 +339,8 @@ export async function createGoogleForm(
 								itemId: sectionId,
 								title: section.title,
 								description: section.description || "",
-								// @ts-ignore - SectionHeaderItem may not be in typings but is supported by API
-								sectionHeaderItem: {},
+								// Using PageBreakItem to represent a new section header since SectionHeaderItem is not supported in the REST API
+								pageBreakItem: {},
 							} as any,
 							location: { index: currentIndex++ },
 						},
