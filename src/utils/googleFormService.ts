@@ -265,12 +265,15 @@ function validateBranchingNavigation(schema: FormSchema) {
 	console.info("[branching-validator] All conditional sections have corresponding navigation.");
 }
 
-// Helper to slugify section titles into safe IDs
+// Google Forms item IDs must contain only letters, numbers, or underscores and start with a letter.
 function slugify(text: string): string {
-	return text
+	const cleaned = text
 		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-|-$/g, "");
+		.replace(/[^a-z0-9]+/g, "_") // replace non-alphanumerics with underscore
+		.replace(/_+/g, "_") // collapse multiple underscores
+		.replace(/^_+|_+$/g, ""); // trim leading/trailing underscores
+	// Ensure the ID starts with a letter as required by the API; prepend "s_" if it doesn’t.
+	return /^[a-z]/.test(cleaned) ? cleaned : `s_${cleaned}`;
 }
 
 export async function createGoogleForm(
