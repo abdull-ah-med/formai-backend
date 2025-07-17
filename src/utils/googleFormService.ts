@@ -52,42 +52,75 @@ function mapFieldToGoogleFormsRequest(field: FormField, index: number): forms_v1
 				options: [{ value: "Yes" }],
 			};
 			break;
-		case "radio":
+		case "radio": {
+			let options = (field.options?.map((opt) => {
+				if (typeof opt === "string") {
+					return { value: opt } as forms_v1.Schema$Option;
+				} else {
+					const optionObj: forms_v1.Schema$Option = {
+						value: opt.label || opt.text || "",
+					} as forms_v1.Schema$Option;
+					if (opt.goToAction) {
+						optionObj.goToAction = opt.goToAction;
+					}
+					if ((opt as any).goToSectionId) {
+						optionObj.goToSectionId = (opt as any).goToSectionId;
+					}
+					return optionObj;
+				}
+			}) || [{ value: "Option 1" }]) as forms_v1.Schema$Option[];
+
+			// If any option has navigation, ensure all options have a goToAction to satisfy API.
+			const anyNav = options.some((o) => "goToAction" in o || "goToSectionId" in o);
+			if (anyNav) {
+				options = options.map((o) => {
+					if (!("goToAction" in o) && !("goToSectionId" in o)) {
+						return { ...o, goToAction: "NEXT_SECTION" };
+					}
+					return o;
+				});
+			}
+
 			request.createItem!.item!.questionItem!.question!.choiceQuestion = {
 				type: "RADIO",
-				options: field.options?.map((opt) => {
-					if (typeof opt === "string") {
-						return { value: opt };
-					} else {
-						const optionObj: any = {
-							value: opt.label || opt.text || "",
-						};
-						if (opt.goToAction) {
-							optionObj.goToAction = opt.goToAction;
-						}
-						return optionObj;
-					}
-				}) || [{ value: "Option 1" }],
+				options,
 			};
 			break;
-		case "select":
+		}
+		case "select": {
+			let options = (field.options?.map((opt) => {
+				if (typeof opt === "string") {
+					return { value: opt } as forms_v1.Schema$Option;
+				} else {
+					const optionObj: forms_v1.Schema$Option = {
+						value: opt.label || opt.text || "",
+					};
+					if (opt.goToAction) {
+						optionObj.goToAction = opt.goToAction;
+					}
+					if ((opt as any).goToSectionId) {
+						optionObj.goToSectionId = (opt as any).goToSectionId;
+					}
+					return optionObj;
+				}
+			}) || [{ value: "Option 1" }]) as forms_v1.Schema$Option[];
+
+			const anyNav = options.some((o) => "goToAction" in o || "goToSectionId" in o);
+			if (anyNav) {
+				options = options.map((o) => {
+					if (!("goToAction" in o) && !("goToSectionId" in o)) {
+						return { ...o, goToAction: "NEXT_SECTION" };
+					}
+					return o;
+				});
+			}
+
 			request.createItem!.item!.questionItem!.question!.choiceQuestion = {
 				type: "DROP_DOWN",
-				options: field.options?.map((opt) => {
-					if (typeof opt === "string") {
-						return { value: opt };
-					} else {
-						const optionObj: any = {
-							value: opt.label || opt.text || "",
-						};
-						if (opt.goToAction) {
-							optionObj.goToAction = opt.goToAction;
-						}
-						return optionObj;
-					}
-				}) || [{ value: "Option 1" }],
+				options,
 			};
 			break;
+		}
 		case "rating":
 			request.createItem!.item!.questionItem!.question!.scaleQuestion = {
 				low: 1,
