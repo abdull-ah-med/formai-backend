@@ -110,7 +110,7 @@ GUIDELINES FOR WHEN TO ADD BRANCHING
 • NEVER invent branching if the user’s description can be satisfied with a linear form.
 • Prefer simple NEXT_SECTION jumps over complex trees unless strictly required.
 • ALWAYS encode navigation inside the *options* of the controlling **radio** or **select** question using **goToAction** (or **goToSectionId** when a specific section header is required). This is what the Google Forms API respects.
-• Optionally (recommended) ALSO include a section-level \`conditions\` array as metadata so dashboards can highlight conditional sections. Example:
+• You may ALSO include a section-level \`conditions\` array as metadata so dashboards can highlight conditional sections—but **conditions alone do NOT hide sections in Google Forms**. You MUST still drive the flow with navigation in the controlling question. Example:
   {
     "title": "Payment Details",
     "conditions": [ { "fieldId": "Need invoice?", "equals": "Yes" } ],
