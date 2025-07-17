@@ -61,6 +61,7 @@ function mapFieldToGoogleFormsRequest(field: FormField, index: number): forms_v1
 			};
 			break;
 		case "radio": {
+			console.debug("[mapField] RADIO", field.label, field.options);
 			let options = (field.options?.map((opt) => {
 				if (typeof opt === "string") {
 					return { value: opt } as forms_v1.Schema$Option;
@@ -88,6 +89,7 @@ function mapFieldToGoogleFormsRequest(field: FormField, index: number): forms_v1
 					return o;
 				});
 			}
+			console.debug("[mapField] RADIO options after nav patch", options);
 
 			request.createItem!.item!.questionItem!.question!.choiceQuestion = {
 				type: "RADIO",
@@ -96,6 +98,7 @@ function mapFieldToGoogleFormsRequest(field: FormField, index: number): forms_v1
 			break;
 		}
 		case "select": {
+			console.debug("[mapField] SELECT", field.label, field.options);
 			let options = (field.options?.map((opt) => {
 				if (typeof opt === "string") {
 					return { value: opt } as forms_v1.Schema$Option;
@@ -122,6 +125,7 @@ function mapFieldToGoogleFormsRequest(field: FormField, index: number): forms_v1
 					return o;
 				});
 			}
+			console.debug("[mapField] SELECT options after nav patch", options);
 
 			request.createItem!.item!.questionItem!.question!.choiceQuestion = {
 				type: "DROP_DOWN",
