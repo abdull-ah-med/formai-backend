@@ -371,6 +371,13 @@ async function applyConditionalNavigation(
 		schema.fields.forEach(processField);
 	}
 
+	console.debug(
+		"[nav] built navRequests",
+		navRequests.map((r) => ({
+			loc: (r.updateItem as any)?.location?.index,
+			questionId: (r.updateItem as any)?.item?.itemId,
+		}))
+	);
 	if (navRequests.length) {
 		await formsClient.forms.batchUpdate({
 			formId,
@@ -383,6 +390,12 @@ export async function createGoogleForm(
 	schema: FormSchema,
 	oauth2Client: OAuth2Client
 ): Promise<{ formId: string; responderUri: string }> {
+	console.info("[createGoogleForm] start", {
+		title: schema.title,
+		sections: schema.sections?.length,
+		fields: schema.fields?.length,
+	});
+	console.debug("[createGoogleForm] raw schema", JSON.stringify(schema, null, 2));
 	// Validate the schema first
 	const validation = validateFormSchema(schema);
 	if (!validation.valid) {
@@ -443,10 +456,19 @@ export async function createGoogleForm(
 						location: { index: currentIndex++ },
 					},
 				});
+				console.debug("[build] adding section header", {
+					sectionTitle: section.title,
+					atIndex: currentIndex - 1,
+				});
 
 				// Add fields for this section
 				section.fields.forEach((field) => {
 					requests.push(mapFieldToGoogleFormsRequest(field, currentIndex++));
+					console.debug("[build] adding field", {
+						fieldLabel: field.label,
+						index: currentIndex - 1,
+						type: field.type,
+					});
 				});
 			});
 		} else if (schema.fields) {
@@ -464,10 +486,14 @@ export async function createGoogleForm(
 					requests,
 				},
 			});
+			console.info("[createGoogleForm] initial structure applied", {
+				totalRequests: requests.length,
+			});
 		}
 
 		// 4. Apply conditional navigation
 		await applyConditionalNavigation(forms, formId, schema);
+		console.info("[createGoogleForm] applying conditional navigation now");
 
 		// 5. Get the form details to return the responder URI
 		const form = await forms.forms.get({ formId });
