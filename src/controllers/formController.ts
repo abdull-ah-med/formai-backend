@@ -209,7 +209,7 @@ export const finalizeForm = async (req: Request, res: Response) => {
 			const googleForm = await createGoogleForm(finalClaudeSchema, oauth2Client);
 
 			// Update the form with Google Form details
-			form.googleFormUrl = googleForm.responderUri;
+			form.googleFormUrl = googleForm.responderUri ?? undefined;
 			await form.save();
 
 			// Add to user's form history
@@ -217,7 +217,7 @@ export const finalizeForm = async (req: Request, res: Response) => {
 			user.formsHistory.push({
 				schema: finalUserSchema,
 				formId: googleForm.formId,
-				responderUri: googleForm.responderUri,
+				responderUri: googleForm.responderUri ?? undefined,
 				finalizedAt: new Date(),
 			});
 			await user.save();
