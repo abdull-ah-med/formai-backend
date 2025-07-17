@@ -69,7 +69,21 @@ export async function generateSchemaFromPrompt(prompt: string): Promise<FormSche
 		const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
 		const jsonString = jsonMatch ? jsonMatch[1] : content;
 
-		return JSON.parse(jsonString);
+		const schema = JSON.parse(jsonString) as FormSchema;
+
+		// Ensure all new forms use the sections structure for consistency
+		if (!schema.sections || schema.sections.length === 0) {
+			schema.sections = [
+				{
+					title: schema.title || "Main Section",
+					description: schema.description,
+					fields: schema.fields || [],
+				},
+			];
+			delete schema.fields; // Remove the old top-level fields
+		}
+
+		return schema;
 	} catch (error) {
 		throw new Error("Failed to generate form schema from Claude API.");
 	}
@@ -113,7 +127,21 @@ Please apply these changes and return the new, complete JSON schema. Maintain th
 		const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
 		const jsonString = jsonMatch ? jsonMatch[1] : content;
 
-		return JSON.parse(jsonString);
+		const schema = JSON.parse(jsonString) as FormSchema;
+
+		// Ensure revisions also use the sections structure
+		if (!schema.sections || schema.sections.length === 0) {
+			schema.sections = [
+				{
+					title: schema.title || "Main Section",
+					description: schema.description,
+					fields: schema.fields || [],
+				},
+			];
+			delete schema.fields; // Remove the old top-level fields
+		}
+
+		return schema;
 	} catch (error) {
 		throw new Error("Failed to revise form schema with Claude API.");
 	}
