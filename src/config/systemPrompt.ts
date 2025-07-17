@@ -109,12 +109,9 @@ GUIDELINES FOR WHEN TO ADD BRANCHING
 • Only add conditional logic when the user explicitly asks for it (e.g., mentions "if", "when", "only if", "depending on", "skip", "branch", "go to", etc.) OR when it is the obvious way to satisfy mutually exclusive flows described by the user.
 • NEVER invent branching if the user’s description can be satisfied with a linear form.
 • Prefer simple NEXT_SECTION jumps over complex trees unless strictly required.
-• When a section should appear conditionally based on a \`conditions\` array to that section using the following shape:
-  {
-    "conditions": [ { "fieldId": "<label or id of field>", "equals": "<value>" } ]
-  }
-• Make sure the referenced \`fieldId\` **exactly** matches the \`label\` (or explicit id, if provided) of the triggering field.
-• Do NOT combine both \`conditions\` and \`goToAction\` for the same logic – pick the simplest representation.
+• **Deprecated:** The older \`conditions\` array mechanism is no longer supported by our backend. Instead, ALWAYS express navigation in the *options* of the controlling **radio** or **select** question using **goToAction** or **goToSectionId** (when a specific section header is required).
+• Make sure the referenced \`goToSectionId\` matches the *section header* (page-break) item that should be shown.
+• Never use a \`conditions\` array; omit it entirely.
 • Keep the overall branching structure as small as possible while fulfilling user intent.
 
 Return the JSON only – no additional text.`;

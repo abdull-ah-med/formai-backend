@@ -50,7 +50,7 @@ export async function generateSchemaFromPrompt(prompt: string): Promise<FormSche
 		const response = await axios.post(
 			CLAUDE_API_URL,
 			{
-				model: "claude-3-5-sonnet-20241022",
+				model: "claude-3-7-sonnet-20250219",
 				max_tokens: 4096,
 				system: CLAUDE_SYSTEM_PROMPT,
 				messages: [{ role: "user", content: prompt }],
@@ -94,7 +94,7 @@ Please apply these changes and return the new, complete JSON schema. Maintain th
 		const response = await axios.post(
 			CLAUDE_API_URL,
 			{
-				model: "claude-3-5-sonnet-20241022",
+				model: "claude-3-7-sonnet-20250219",
 				max_tokens: 4096,
 				system: CLAUDE_SYSTEM_PROMPT,
 				messages: [{ role: "user", content: prompt }],
