@@ -4,9 +4,9 @@ import jwt from "jsonwebtoken";
 import User from "../../models/user.model";
 import { OAuth2Client } from "google-auth-library";
 
-const { JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FRONTEND_URL } = process.env;
+const { JWT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } = process.env;
 
-if (!JWT_SECRET || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !FRONTEND_URL) {
+if (!JWT_SECRET || !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
 	throw new Error("Missing required OAuth environment variables");
 }
 
@@ -23,7 +23,7 @@ export const googleCallback = async (req: Request, res: Response) => {
 				message: "No authorization code was provided in the callback",
 			});
 		}
-		const redirectUri = `${(FRONTEND_URL || "").replace(/\/$/, "")}/auth/google/callback`;
+		const redirectUri = GOOGLE_REDIRECT_URI;
 
 		const client = new OAuth2Client({
 			clientId: GOOGLE_CLIENT_ID,
