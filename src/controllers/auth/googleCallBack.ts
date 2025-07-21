@@ -116,35 +116,46 @@ export const googleCallback = async (req: Request, res: Response) => {
 				});
 			}
 
-			// If no Google ID yet, link it
-			if (!user.googleId) user.googleId = payload.sub;
-
-			// Always update the Google tokens
-			user.googleTokens = {
-				accessToken: tokens.access_token!,
-				refreshToken:
-					tokens.refresh_token ||
-					(user.googleTokens ? user.googleTokens.refreshToken : undefined),
-				expiryDate: tokens.expiry_date || Date.now() + 3600 * 1000,
-			};
-
-			// When linking a Google account, we should clear the password
-			// to enforce Google-only login from this point forward.
-			if (user.isModified("googleId")) {
-				user.password = undefined;
-			}
-
-			user.lastLogin = new Date();
 			try {
-				await user.save();
-			} catch (saveError: any) {
+				const updatedUser = await User.findOneAndUpdate(
+					{ email: payload.email },
+					{
+						$set: {
+							googleId: payload.sub,
+							lastLogin: new Date(),
+							googleTokens: {
+								accessToken: tokens.access_token!,
+								refreshToken:
+									tokens.refresh_token ||
+									(user.googleTokens
+										? user.googleTokens.refreshToken
+										: undefined),
+								expiryDate:
+									tokens.expiry_date || Date.now() + 3600 * 1000,
+							},
+						},
+						$unset: { password: 1 },
+					},
+					{ new: true }
+				);
+				user = updatedUser;
+			} catch (updateError: any) {
 				return res.status(500).json({
 					success: false,
 					error: "User update failed",
-					message: saveError.message || "Failed to update user account",
+					message: updateError.message || "Failed to link Google account.",
 				});
 			}
 		}
+
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				error: "User not found",
+				message: "Could not find or update user after authentication.",
+			});
+		}
+
 		let token;
 		try {
 			token = jwt.sign({ sub: user._id, email: user.email, role: user.role }, JWT_SECRET, {
