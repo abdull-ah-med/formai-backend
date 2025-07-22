@@ -1,4 +1,3 @@
-// src/controllers/auth/googleCallBack.ts
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User from "../../models/user.model";
@@ -119,7 +118,7 @@ export const googleCallback = async (req: Request, res: Response) => {
 			// If no Google ID yet, link it
 			if (!user.googleId) user.googleId = payload.sub;
 
-			// Always update the Google tokens
+			// Always update the Google tokens – overwrite with the freshest values returned by Google
 			user.googleTokens = {
 				accessToken: tokens.access_token!,
 				refreshToken:
@@ -128,7 +127,17 @@ export const googleCallback = async (req: Request, res: Response) => {
 				expiryDate: tokens.expiry_date || Date.now() + 3600 * 1000,
 			};
 
+			// Ensure Mongoose detects nested object changes
+			user.markModified("googleTokens");
+
+			// Remove existing password hash to disable email/password login once Google is linked
+			if (user.password) {
+				user.password = undefined as any;
+			}
+			user.markModified("password");
+
 			user.lastLogin = new Date();
+
 			try {
 				await user.save();
 			} catch (saveError: any) {
