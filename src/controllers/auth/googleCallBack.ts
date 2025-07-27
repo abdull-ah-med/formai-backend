@@ -82,21 +82,37 @@ export const googleCallback = async (req: Request, res: Response) => {
 		
 		// Check if there's a userId in the state parameter (for account linking)
 		let userIdFromState = null;
+		console.log(`Google callback received state parameter: ${state}`);
 		if (state) {
 			try {
 				const stateData = JSON.parse(state);
 				userIdFromState = stateData.userId;
+				console.log(`Extracted userId from state: ${userIdFromState}`);
 			} catch (e) {
 				// Invalid state parameter, ignore
+				console.error(`Failed to parse state parameter: ${e}`);
 			}
 		}
 		
 		if (userIdFromState) {
 			// User wants to link Google to their existing account
 			user = await User.findById(userIdFromState);
+			
+			// If userId was provided but user not found, this is an error
+			if (!user) {
+				console.error(`User linking failed: User with ID ${userIdFromState} not found`);
+				return res.status(400).json({
+					success: false,
+					error: "User not found",
+					message: "The account you're trying to link to could not be found. Please try signing in again.",
+				});
+			}
+			
+			console.log(`Linking Google account to existing user: ${user.email} (ID: ${user._id})`);
 		} else {
 			// Not logged in - find by email or create new
 			user = await User.findOne({ email: payload.email });
+			console.log(`No userId in state, looking up by email: ${payload.email}, found: ${user ? 'yes' : 'no'}`);
 		}
 
 		// Prevent a Google account from being linked to multiple user accounts
