@@ -9,17 +9,10 @@ dotenv.config(); // must come first
 
 export const loginUser = async (req: Request, res: Response) => {
         const { email, password, rememberMe, website: honeypot, recaptchaToken } = req.body;
-
-        // ------------------------------------------------------------------
-        // Honeypot check – bots usually fill hidden fields
-        // ------------------------------------------------------------------
-        if (honeypot && honeypot !== "") {
+if (honeypot && honeypot !== "") {
                 return res.status(400).json({ message: "Bot detected (honeypot triggered)" });
         }
 
-        // ------------------------------------------------------------------
-        // Verify Google reCAPTCHA token
-        // ------------------------------------------------------------------
         const captchaValid = await verifyRecaptcha(recaptchaToken);
         if (!captchaValid) {
                 return res.status(400).json({ message: "Failed CAPTCHA validation" });
