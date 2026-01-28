@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { generateForm, reviseForm, finalizeForm } from "../controllers/formController";
 import verifyJWT from "../middleware/verifyJWT";
+import { formGenerationLimiter, apiLimiter } from "../middleware/rateLimiter";
 import User from "../models/user.model";
 import { AuthTokenPayload } from "../middleware/verifyJWT";
 import { Request, Response } from "express";
@@ -8,10 +9,10 @@ import { Request, Response } from "express";
 const router = Router();
 router.use(verifyJWT);
 
-router.post("/generate-form", generateForm);
-router.post("/revise-form/:formId", reviseForm);
-router.post("/finalize-form/:formId", finalizeForm);
-router.get("/forms/history", async (req: Request, res: Response) => {
+router.post("/generate-form", formGenerationLimiter, generateForm);
+router.post("/revise-form/:formId", formGenerationLimiter, reviseForm);
+router.post("/finalize-form/:formId", apiLimiter, finalizeForm);
+router.get("/forms/history", apiLimiter, async (req: Request, res: Response) => {
 	try {
 		const userId = (req.user as AuthTokenPayload)?.sub;
 		if (!userId) {

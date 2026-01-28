@@ -28,10 +28,10 @@ export const delinkGoogleAccount = async (req: Request, res: Response) => {
 
                 return res.status(200).json({ success: true, message: "Google account delinked successfully." });
         } catch (error: any) {
+                console.error("[delinkGoogleAccount] Error:", error.message);
                 return res.status(500).json({
                         success: false,
                         message: "Server error while delinking Google account.",
-                        error: error.message,
                 });
         }
 };

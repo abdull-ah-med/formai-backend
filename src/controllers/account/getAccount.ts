@@ -37,10 +37,10 @@ export const getAccount = async (req: Request, res: Response) => {
                         },
                 });
         } catch (error: any) {
+                console.error("[getAccount] Error:", error.message);
                 return res.status(500).json({
                         success: false,
                         message: "Server error while fetching account",
-                        error: error.message,
                 });
         }
 };

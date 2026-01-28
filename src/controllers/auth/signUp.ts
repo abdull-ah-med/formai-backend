@@ -53,7 +53,6 @@ export const registerUser = async (req: Request, res: Response) => {
 
         res.status(201).json({
                 success: true,
-                message: "User registered",
-                userId: user._id,
+                message: "User registered successfully",
         });
 };

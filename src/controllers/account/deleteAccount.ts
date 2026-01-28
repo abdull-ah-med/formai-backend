@@ -50,10 +50,10 @@ export const deleteAccount = async (req: Request, res: Response) => {
                         message: "Account and all associated data deleted successfully",
                 });
         } catch (error: any) {
+                console.error("[deleteAccount] Error:", error.message);
                 return res.status(500).json({
                         success: false,
                         message: "Server error while deleting account",
-                        error: error.message,
                 });
         }
 };

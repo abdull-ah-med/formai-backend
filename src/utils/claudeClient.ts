@@ -13,17 +13,11 @@ export interface FormField {
 	type: string;
 	required?: boolean;
 	scale?: number;
-	// Options can optionally include goToAction to enable conditional navigation
 	options?: Array<
 		| string
 		| {
 				label?: string;
 				text?: string;
-				/**
-				 * Navigation directive – REQUIRED for every option of radio/select.
-				 * "NEXT_SECTION" | "SUBMIT_FORM" for built-in actions, or the exact
-				 * Section.title to jump to for branching.
-				 */
 				goTo: "NEXT_SECTION" | "SUBMIT_FORM" | string;
 		  }
 	>;

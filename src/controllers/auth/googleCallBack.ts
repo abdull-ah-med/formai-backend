@@ -37,11 +37,11 @@ export const googleCallback = async (req: Request, res: Response) => {
 			});
 			tokens = response.tokens;
 		} catch (tokenError: any) {
+			console.error("[googleCallback] Token exchange failed:", tokenError.message);
 			return res.status(400).json({
 				success: false,
 				error: "Token exchange failed",
-				message: tokenError.message || "Failed to exchange authorization code for tokens",
-				details: tokenError.response?.data,
+				message: "Failed to exchange authorization code for tokens",
 			});
 		}
 
@@ -60,10 +60,11 @@ export const googleCallback = async (req: Request, res: Response) => {
 				audience: GOOGLE_CLIENT_ID,
 			});
 		} catch (verifyError: any) {
+			console.error("[googleCallback] ID token verification failed:", verifyError.message);
 			return res.status(400).json({
 				success: false,
 				error: "ID token verification failed",
-				message: verifyError.message || "Failed to verify ID token",
+				message: "Failed to verify ID token",
 			});
 		}
 
@@ -82,15 +83,12 @@ export const googleCallback = async (req: Request, res: Response) => {
 		
 		// Check if there's a userId in the state parameter (for account linking)
 		let userIdFromState = null;
-		console.log(`Google callback received state parameter: ${state}`);
 		if (state) {
 			try {
 				const stateData = JSON.parse(state);
 				userIdFromState = stateData.userId;
-				console.log(`Extracted userId from state: ${userIdFromState}`);
 			} catch (e) {
 				// Invalid state parameter, ignore
-				console.error(`Failed to parse state parameter: ${e}`);
 			}
 		}
 		
@@ -100,7 +98,6 @@ export const googleCallback = async (req: Request, res: Response) => {
 			
 			// If userId was provided but user not found, this is an error
 			if (!user) {
-				console.error(`User linking failed: User with ID ${userIdFromState} not found`);
 				return res.status(400).json({
 					success: false,
 					error: "User not found",
@@ -108,11 +105,9 @@ export const googleCallback = async (req: Request, res: Response) => {
 				});
 			}
 			
-			console.log(`Linking Google account to existing user: ${user.email} (ID: ${user._id})`);
 		} else {
 			// Not logged in - find by email or create new
 			user = await User.findOne({ email: payload.email });
-			console.log(`No userId in state, looking up by email: ${payload.email}, found: ${user ? 'yes' : 'no'}`);
 		}
 
 		// Prevent a Google account from being linked to multiple user accounts
@@ -144,10 +139,11 @@ export const googleCallback = async (req: Request, res: Response) => {
 					},
 				});
 			} catch (createError: any) {
+				console.error("[googleCallback] User creation failed:", createError.message);
 				return res.status(500).json({
 					success: false,
 					error: "User creation failed",
-					message: createError.message || "Failed to create new user account",
+					message: "Failed to create new user account",
 				});
 			}
 		} else {
@@ -185,10 +181,11 @@ export const googleCallback = async (req: Request, res: Response) => {
 			try {
 				await user.save();
 			} catch (saveError: any) {
+				console.error("[googleCallback] User save failed:", saveError.message);
 				return res.status(500).json({
 					success: false,
 					error: "User update failed",
-					message: saveError.message || "Failed to update user account",
+					message: "Failed to update user account",
 				});
 			}
 		}
@@ -200,10 +197,11 @@ export const googleCallback = async (req: Request, res: Response) => {
 				issuer: "auth-service",
 			});
 		} catch (jwtError: any) {
+			console.error("[googleCallback] JWT creation failed:", jwtError.message);
 			return res.status(500).json({
 				success: false,
-				error: "JWT creation failed",
-				message: jwtError.message || "Failed to create authentication token",
+				error: "Authentication failed",
+				message: "Failed to create authentication token",
 			});
 		}
 		res.cookie("token", token, {
@@ -218,14 +216,13 @@ export const googleCallback = async (req: Request, res: Response) => {
 			message: "Login successful",
 			token,
 			hasFormsScope: true, // We requested the forms scope in the OAuth URL
-			hasRefreshToken,
 		});
 	} catch (err: any) {
+		console.error("[googleCallback] OAuth error:", err.message);
 		return res.status(500).json({
 			success: false,
 			error: "OAuth callback failed",
-			message: err.message || "An error occurred during Google authentication",
-			details: process.env.NODE_ENV !== "production" ? err.toString() : undefined,
+			message: "An error occurred during Google authentication",
 		});
 	}
 };
