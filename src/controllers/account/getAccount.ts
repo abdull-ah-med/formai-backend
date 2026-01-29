@@ -31,6 +31,7 @@ export const getAccount = async (req: Request, res: Response) => {
                                 role: user.role,
                                 googleId: user.googleId,
                                 hasPassword: !!user.password,
+                                hasApiKey: !!user.get('anthropicApiKey'),
                                 createdAt: user.createdAt,
                                 updatedAt: user.updatedAt,
                                 isGoogleLinked: !!user.googleId,

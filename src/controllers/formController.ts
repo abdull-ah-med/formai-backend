@@ -76,6 +76,15 @@ export const generateForm = async (req: Request, res: Response) => {
 			return res.status(404).json({ success: false, error: "User not found." });
 		}
 
+		// Check if user has an API key configured
+		const userApiKey = user.get('anthropicApiKey');
+		if (!userApiKey) {
+			return res.status(400).json({
+				success: false,
+				error: "No Anthropic API key configured. Please add your API key in Account Settings to generate forms.",
+			});
+		}
+
 		const today = new Date();
 		const creationData = user.dailyFormCreations || {
 			count: 0,
@@ -99,7 +108,7 @@ export const generateForm = async (req: Request, res: Response) => {
 		user.dailyFormCreations = creationData;
 		await user.save();
 
-		const schemaFromClaude = await generateSchemaFromPrompt(prompt);
+		const schemaFromClaude = await generateSchemaFromPrompt(prompt, userApiKey);
 
 		// Add conditional metadata for the front-end before saving/sending
 		const schema = enrichSchemaWithConditions(schemaFromClaude);
@@ -160,6 +169,16 @@ export const reviseForm = async (req: Request, res: Response) => {
 			});
 		}
 
+		// Get user's API key
+		const user = await UserModel.findById(userId);
+		const userApiKey = user?.get('anthropicApiKey');
+		if (!userApiKey) {
+			return res.status(400).json({
+				success: false,
+				error: "No Anthropic API key configured. Please add your API key in Account Settings.",
+			});
+		}
+
 		// Get the latest schema (either the original or the last revision)
 		const latestSchema =
 			form.revisions.length > 0
@@ -167,7 +186,7 @@ export const reviseForm = async (req: Request, res: Response) => {
 				: form.claudeResponse;
 
 		// Generate the revised schema
-		const revisedSchemaFromClaude = await reviseSchemaWithPrompt(latestSchema, prompt);
+		const revisedSchemaFromClaude = await reviseSchemaWithPrompt(latestSchema, prompt, userApiKey);
 
 		// Add conditional metadata for the front-end
 		const revisedSchema = enrichSchemaWithConditions(revisedSchemaFromClaude);
