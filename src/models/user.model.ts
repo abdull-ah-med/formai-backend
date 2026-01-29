@@ -165,8 +165,16 @@ const userSchema = new Schema<IUser>(
 				enum: ["free", "premium", "enterprise"],
 				default: "free",
 			},
-			stripeCustomerId: { type: String },
-			stripeSubscriptionId: { type: String },
+			stripeCustomerId: {
+				type: String,
+				set: (val: string) => (val ? encrypt(val) : undefined),
+				get: (val: string) => (val ? decrypt(val) : undefined),
+			},
+			stripeSubscriptionId: {
+				type: String,
+				set: (val: string) => (val ? encrypt(val) : undefined),
+				get: (val: string) => (val ? decrypt(val) : undefined),
+			},
 			priceId: { type: String },
 			status: {
 				type: String,
