@@ -142,6 +142,30 @@ npm run build
 npm start
 ```
 
+## Deployment
+
+The backend is deployed on **Azure App Service** with automated CI/CD via GitHub Actions.
+
+### Pipeline Overview
+
+```
+push to main → GitHub Actions → Build & Test → Deploy to Azure
+```
+
+- **Trigger**: Push to `main` branch
+- **Build**: TypeScript compilation, dependency installation
+- **Deploy**: Automatic deployment to Azure App Service
+- **Environment**: Managed via Azure App Service configuration
+
+### Infrastructure
+
+| Component | Service |
+|-----------|----------|
+| Hosting | Azure App Service (Node.js) |
+| Database | MongoDB Atlas |
+| CI/CD | GitHub Actions |
+| Secrets | Azure App Service Environment Variables |
+
 ## Key Implementation Details
 
 ### Authentication Flow
