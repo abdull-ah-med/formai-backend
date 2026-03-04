@@ -37,7 +37,7 @@ export async function generateSchemaFromPrompt(prompt: string): Promise<FormSche
         const response = await axios.post(
             CLAUDE_API_URL,
             {
-                model: "mistral-nemo",
+                model: "qwen2.5:7b",
                 max_tokens: 4096,
                 system: CLAUDE_SYSTEM_PROMPT,
                 prompt: prompt,
@@ -47,6 +47,7 @@ export async function generateSchemaFromPrompt(prompt: string): Promise<FormSche
                 headers: {
                     "content-type": "application/json",
                 },
+                timeout: 120000,
             },
         );
 
@@ -94,7 +95,7 @@ Please apply these changes and return the new, complete JSON schema. Maintain th
         const response = await axios.post(
             CLAUDE_API_URL,
             {
-                model: "mistral-nemo",
+                model: "qwen2.5:7b",
                 system: CLAUDE_SYSTEM_PROMPT,
                 prompt: prompt,
                 stream: false,
@@ -104,6 +105,7 @@ Please apply these changes and return the new, complete JSON schema. Maintain th
                   
                     "content-type": "application/json",
                 },
+                timeout: 120000,
             },
         );
 
