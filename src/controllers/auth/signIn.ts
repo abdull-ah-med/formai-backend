@@ -43,8 +43,6 @@ if (honeypot && honeypot !== "") {
                 audience: "api:auth",
                 issuer: "auth-service",
         });
-
-        // Set cookie with proper cross-domain settings for production
         res.cookie("token", token, {
                 httpOnly: true,
                 secure: true, // Always use secure for production

@@ -76,12 +76,7 @@ export const googleCallback = async (req: Request, res: Response) => {
 				message: "Could not retrieve email from Google account",
 			});
 		}
-
-		// If user is logged in (has JWT), link to their account
-		// If not logged in, find by email or create new user
 		let user;
-		
-		// Check if there's a userId in the state parameter (for account linking)
 		let userIdFromState = null;
 		if (state) {
 			try {
@@ -93,7 +88,6 @@ export const googleCallback = async (req: Request, res: Response) => {
 		}
 		
 		if (userIdFromState) {
-			// User wants to link Google to their existing account
 			user = await User.findById(userIdFromState);
 			
 			// If userId was provided but user not found, this is an error
@@ -106,7 +100,6 @@ export const googleCallback = async (req: Request, res: Response) => {
 			}
 			
 		} else {
-			// Not logged in - find by email or create new
 			user = await User.findOne({ email: payload.email });
 		}
 
@@ -157,8 +150,6 @@ export const googleCallback = async (req: Request, res: Response) => {
 
 			// If no Google ID yet, link it
 			if (!user.googleId) user.googleId = payload.sub;
-
-			// Always update the Google tokens – overwrite with the freshest values returned by Google
 			user.googleTokens = {
 				accessToken: tokens.access_token!,
 				refreshToken:

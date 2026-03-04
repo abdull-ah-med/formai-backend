@@ -19,12 +19,12 @@ app.disable("etag");
 const allowedOrigins = [process.env.FRONTEND_URL || "https://formai-frontend-one.vercel.app"];
 
 app.use(
-        cors({
-                origin: allowedOrigins,
-                credentials: true,
-                methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-        })
+    cors({
+        origin: allowedOrigins,
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    }),
 );
 
 app.use(helmet());
@@ -36,22 +36,22 @@ app.disable("x-powered-by");
 
 // Global error handler to prevent leaking stack traces
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-        console.error("[Global Error Handler]:", err.message);
-        res.status(500).json({
-                success: false,
-                message: "An unexpected error occurred",
-        });
+    console.error("[Global Error Handler]:", err.message);
+    res.status(500).json({
+        success: false,
+        message: "An unexpected error occurred",
+    });
 });
 
 const startServer = async () => {
-        try {
-                await connectDB();
+    try {
+        await connectDB();
 
-                const PORT = process.env.PORT;
-                app.listen(PORT);
-        } catch (error) {
-                process.exit(1);
-        }
+        const PORT = process.env.PORT;
+        app.listen(PORT);
+    } catch (error) {
+        process.exit(1);
+    }
 };
 app.use("/api", protectedRoutes);
 app.use("/api/account", accountRoutes);
@@ -61,4 +61,3 @@ app.get("/", (_, res) => res.send("API running"));
 app.get("/health", (_, res) => res.status(200).json({ status: "ok", timestamp: new Date().toISOString() }));
 
 startServer();
-        
