@@ -15,16 +15,9 @@ const isSameDay = (date1: Date, date2: Date) => {
 	);
 };
 
-/**
- * Iterates over a raw schema from Claude and enriches it with a `conditions`
- * array on any section that is the target of a conditional `goTo` navigation.
- * This allows the front-end to display a "Conditional Section" banner.
- * This does not affect the final Google Form, only the dashboard preview.
- */
 function enrichSchemaWithConditions(schema: FormSchema): FormSchema {
 	if (!schema.sections) return schema;
 
-	// Create a deep copy to avoid mutating the original object
 	const newSchema = JSON.parse(JSON.stringify(schema));
 
 	const sectionTitleMap = new Map<string, any>();
@@ -76,15 +69,6 @@ export const generateForm = async (req: Request, res: Response) => {
 			return res.status(404).json({ success: false, error: "User not found." });
 		}
 
-		// Check if user has an API key configured
-		const userApiKey = user.get('anthropicApiKey');
-		if (!userApiKey) {
-			return res.status(400).json({
-				success: false,
-				error: "No Anthropic API key configured. Please add your API key in Account Settings to generate forms.",
-			});
-		}
-
 		const today = new Date();
 		const creationData = user.dailyFormCreations || {
 			count: 0,
@@ -108,7 +92,7 @@ export const generateForm = async (req: Request, res: Response) => {
 		user.dailyFormCreations = creationData;
 		await user.save();
 
-		const schemaFromClaude = await generateSchemaFromPrompt(prompt, userApiKey);
+		const schemaFromClaude = await generateSchemaFromPrompt(prompt);
 
 		// Add conditional metadata for the front-end before saving/sending
 		const schema = enrichSchemaWithConditions(schemaFromClaude);
@@ -186,7 +170,7 @@ export const reviseForm = async (req: Request, res: Response) => {
 				: form.claudeResponse;
 
 		// Generate the revised schema
-		const revisedSchemaFromClaude = await reviseSchemaWithPrompt(latestSchema, prompt, userApiKey);
+		const revisedSchemaFromClaude = await reviseSchemaWithPrompt(latestSchema, prompt);
 
 		// Add conditional metadata for the front-end
 		const revisedSchema = enrichSchemaWithConditions(revisedSchemaFromClaude);
@@ -209,7 +193,7 @@ export const reviseForm = async (req: Request, res: Response) => {
 				revisionsRemaining: null, // Set to null since there's no limit
 			},
 		});
-	} catch (error) {
+	} catch (error) {	
 		res.status(500).json({
 			success: false,
 			error: "Failed to revise form.",
