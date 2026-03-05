@@ -38,7 +38,6 @@ export async function generateSchemaFromPrompt(prompt: string): Promise<FormSche
             CLAUDE_API_URL,
             {
                 model: "qwen2.5:7b",
-                max_tokens: 4096,
                 system: CLAUDE_SYSTEM_PROMPT,
                 prompt: prompt,
                 stream: false,
