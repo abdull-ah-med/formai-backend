@@ -1,7 +1,8 @@
 import axios from "axios";
 import { CLAUDE_SYSTEM_PROMPT } from "../config/systemPrompt";
 
-const CLAUDE_API_URL = "http://104.214.170.230:11434/api/generate";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 // This interface should match the type expected in the system prompt
 export interface FormField {
@@ -33,24 +34,30 @@ export interface FormSchema {
 }
 
 export async function generateSchemaFromPrompt(prompt: string): Promise<FormSchema> {
+    if (!GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY environment variable is not set.");
+    }
+    
     try {
         const response = await axios.post(
-            CLAUDE_API_URL,
+            `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
             {
-                model: "qwen2.5:7b",
-                system: CLAUDE_SYSTEM_PROMPT,
-                prompt: prompt,
-                stream: false,
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                systemInstruction: {
+                    parts: [{ text: CLAUDE_SYSTEM_PROMPT }]
+                }
             },
             {
                 headers: {
-                    "content-type": "application/json",
+                    "Content-Type": "application/json",
                 },
-                timeout: 120000,
+                timeout: 60000,
             },
         );
 
-        const content = response.data.response;
+        const content = response.data.candidates[0].content.parts[0].text;
         // The response might be wrapped in ```json ... ```, so we need to extract it.
         const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
         const jsonString = jsonMatch ? jsonMatch[1] : content;
@@ -71,7 +78,7 @@ export async function generateSchemaFromPrompt(prompt: string): Promise<FormSche
 
         return schema;
     } catch (error) {
-        throw new Error("Failed to generate form schema from Claude API.");
+        throw new Error("Failed to generate form schema from Gemini API.");
     }
 }
 
@@ -79,6 +86,10 @@ export async function reviseSchemaWithPrompt(
     previousSchema: FormSchema,
     revisionPrompt: string,
 ): Promise<FormSchema> {
+    if (!GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY environment variable is not set.");
+    }
+    
     const prompt = `
 Here is the current form schema:
 \`\`\`json
@@ -92,23 +103,24 @@ Please apply these changes and return the new, complete JSON schema. Maintain th
 
     try {
         const response = await axios.post(
-            CLAUDE_API_URL,
+            `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
             {
-                model: "qwen2.5:7b",
-                system: CLAUDE_SYSTEM_PROMPT,
-                prompt: prompt,
-                stream: false,
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                systemInstruction: {
+                    parts: [{ text: CLAUDE_SYSTEM_PROMPT }]
+                }
             },
             {
                 headers: {
-                  
-                    "content-type": "application/json",
+                    "Content-Type": "application/json",
                 },
-                timeout: 120000,
+                timeout: 60000,
             },
         );
 
-        const content = response.data.response;
+        const content = response.data.candidates[0].content.parts[0].text;
         // The response might be wrapped in ```json ... ```, so we need to extract it.
         const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
         const jsonString = jsonMatch ? jsonMatch[1] : content;
@@ -129,6 +141,6 @@ Please apply these changes and return the new, complete JSON schema. Maintain th
 
         return schema;
     } catch (error) {
-        throw new Error("Failed to revise form schema with Claude API.");
+        throw new Error("Failed to revise form schema with Gemini API.");
     }
 }

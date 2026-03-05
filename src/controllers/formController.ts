@@ -76,7 +76,7 @@ export const generateForm = async (req: Request, res: Response) => {
 		};
 
 		if (isSameDay(creationData.date, today)) {
-			if (creationData.count >= 3) {
+			if (creationData.count >= 10) {
 				return res.status(429).json({
 					success: false,
 					error: "Whoa, you're a form-making machine! Our AI needs to recharge its creative juices (and maybe take a nap). Please come back tomorrow for a fresh batch of forms.",
@@ -150,16 +150,6 @@ export const reviseForm = async (req: Request, res: Response) => {
 			return res.status(403).json({
 				success: false,
 				error: "Not authorized to modify this form.",
-			});
-		}
-
-		// Get user's API key
-		const user = await UserModel.findById(userId);
-		const userApiKey = user?.get('anthropicApiKey');
-		if (!userApiKey) {
-			return res.status(400).json({
-				success: false,
-				error: "No Anthropic API key configured. Please add your API key in Account Settings.",
 			});
 		}
 

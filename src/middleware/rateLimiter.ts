@@ -9,7 +9,6 @@ export const authLimiter = rateLimit({
         message: { success: false, message: "Too many requests, please try again later" },
 });
 
-// Rate limiter for form generation (expensive AI operations)
 export const formGenerationLimiter = rateLimit({
         windowMs: 60 * 60 * 1000, // 1 hour
         max: 20, // Limit each IP to 20 form generations per hour
